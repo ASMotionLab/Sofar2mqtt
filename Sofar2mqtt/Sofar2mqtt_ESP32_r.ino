@@ -1,5 +1,6 @@
 // Update these to match your inverter/network.
 //#define INVERTER_ME3000				// Uncomment for ME3000
+#define INVERTER_HYBRID			// Uncomment for Hybrid
 
 // The device name is used as the MQTT base topic. If you need more than one Sofar2mqtt on your network, give them unique names.
 const char* deviceName = "Sofar2mqtt";
