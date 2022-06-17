@@ -1,17 +1,16 @@
 // Update these to match your inverter/network.
-#define INVERTER_ME3000				// Uncomment for ME3000
-//#define INVERTER_HYBRID			// Uncomment for Hybrid
+//#define INVERTER_ME3000				// Uncomment for ME3000
 
 // The device name is used as the MQTT base topic. If you need more than one Sofar2mqtt on your network, give them unique names.
 const char* deviceName = "Sofar2mqtt";
 const char* version = "v2.0b1";
 
-#define WIFI_SSID	"xxxxx"
-#define WIFI_PASSWORD	"xxxxx"
-#define MQTT_SERVER	"mqtt"
+#define WIFI_SSID	"xxxx"
+#define WIFI_PASSWORD	"xxxx"
+#define MQTT_SERVER	"xxxx"
 #define MQTT_PORT	1883
-#define MQTT_USERNAME	"auser"			// Empty string for none.
-#define MQTT_PASSWORD	"apassword"
+#define MQTT_USERNAME	"xxxx"			// Empty string for none.
+#define MQTT_PASSWORD	"xxxx"
 
 /*****
 Sofar2mqtt is a remote control interface for Sofar solar and battery inverters.
@@ -19,6 +18,26 @@ It allows remote control of the inverter and reports the invertor status, power 
 For read only mode, it will send status messages without the inverter needing to be in passive mode.  
 It's designed to run on an ESP8266 microcontroller with a TTL to RS485 module such as MAX485 or MAX3485.  
 Designed to work with TTL modules with or without the DR and RE flow control pins. If your TTL module does not have these pins then just ignore the wire from D5. 
+
+
+____________________________________________________________________
+This fork (ASMotionLab) is modified for an ESP32 D1 Mini or clone, and uses Hardware Serial 2,
+remapped to pins 16 and 17 for practical reasons. Feel free to use Serial1 if you like, and any pins that will be compatible.
+
+To remap your pins, or to make sure they are assigned correctly:
+"C:\Users\YOURUSERNAME\AppData\Local\Arduino15\packages\esp32\hardware\esp32\1.0.4\cores\esp32\HardwareSerial.cpp"
+
+#ifndef RX2
+#define RX2 16
+#endif
+
+#ifndef TX2
+#define TX2 17
+#endif
+
+Close Arduino IDE completely to force it to relink & recompile from fresh before trying to upload,
+otherwise cached files are used for compile and the modified HardwareSerial.cpp file is ignored.
+__________________________________________________________________
 
 Subscribe your MQTT client to:
 
@@ -97,7 +116,10 @@ calcCRC by angelo.compagnucci@gmail.com and jpmzometa@gmail.com
 
 #define RS485_TRIES 8       // x 50mS to wait for RS485 input chars.
 // Wifi parameters. Fill in your wifi network name and password.
-#include <ESP8266WiFi.h>
+
+//#include <ESP8266WiFi.h> // this is if you're using a ESP8266
+#include <WiFi.h> // this is if you're using a ESP32
+
 const char* wifiName = WIFI_SSID;
 WiFiClient wifi;
 
@@ -109,12 +131,14 @@ PubSubClient mqtt(wifi);
 // SoftwareSerial is used to create a second serial port, which will be deidcated to RS485.
 // The built-in serial port remains available for flashing and debugging.
 #include <SoftwareSerial.h>
-#define SERIAL_COMMUNICATION_CONTROL_PIN D5 // Transmission set pin
+//#define SERIAL_COMMUNICATION_CONTROL_PIN D5 // Transmission set pin
 #define RS485_TX HIGH
 #define RS485_RX LOW
-#define RXPin        D6  // Serial Receive pin
-#define TXPin        D7  // Serial Transmit pin
-SoftwareSerial RS485Serial(RXPin, TXPin);
+
+
+//#define RXPin        18  // Serial Receive pin
+//#define TXPin        19  // Serial Transmit pin
+//SoftwareSerial RS485Serial(RXPin, TXPin);
 
 // Sofar run states
 #define waiting 0
@@ -538,11 +562,11 @@ void mqttReconnect()
  */
 void flushRS485()
 {
-	RS485Serial.flush();
+	Serial2.flush();
 	delay(200);
 
-	while(RS485Serial.available())
-		RS485Serial.read();
+	while(Serial2.available())
+		Serial2.read();
 }
 
 int sendModbus(uint8_t frame[], byte frameSize, modbusResponse *resp)
@@ -554,12 +578,12 @@ int sendModbus(uint8_t frame[], byte frameSize, modbusResponse *resp)
 	flushRS485();
 
 	//Send
-	digitalWrite(SERIAL_COMMUNICATION_CONTROL_PIN, RS485_TX);
-	RS485Serial.write(frame, frameSize);
+	//digitalWrite(SERIAL_COMMUNICATION_CONTROL_PIN, RS485_TX);
+	Serial2.write(frame, frameSize);
 
 	// It's important to reset the SERIAL_COMMUNICATION_CONTROL_PIN as soon as
 	// we finish sending so that the serial port can start to buffer the response.
-	digitalWrite(SERIAL_COMMUNICATION_CONTROL_PIN, RS485_RX);
+	//digitalWrite(SERIAL_COMMUNICATION_CONTROL_PIN, RS485_RX);
 	return listen(resp);
 }
 
@@ -584,7 +608,7 @@ int listen(modbusResponse *resp)
 	{
 		int tries = 0;
 
-		while((!RS485Serial.available()) && (tries++ < RS485_TRIES))
+		while((!Serial2.available()) && (tries++ < RS485_TRIES))
 			delay(50);
 
 		if(tries >= RS485_TRIES)
@@ -593,7 +617,7 @@ int listen(modbusResponse *resp)
 			break;
 		}
 
-		inFrame[inByteNum] = RS485Serial.read();
+		inFrame[inByteNum] = Serial2.read();
 
 		//Process the byte
 		switch(inByteNum)
@@ -847,9 +871,9 @@ void setup()
 	Serial.begin(9600);
 	pinMode(LED_BUILTIN, OUTPUT);
 
-	pinMode(SERIAL_COMMUNICATION_CONTROL_PIN, OUTPUT);
-	digitalWrite(SERIAL_COMMUNICATION_CONTROL_PIN, RS485_RX);
-	RS485Serial.begin(9600);
+	//pinMode(SERIAL_COMMUNICATION_CONTROL_PIN, OUTPUT);
+	//digitalWrite(SERIAL_COMMUNICATION_CONTROL_PIN, RS485_RX);
+	Serial2.begin(9600);
 
 	delay(500);
 
