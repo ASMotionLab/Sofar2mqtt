@@ -63,6 +63,8 @@ Parts List:
 1. ESP32 D1 Mini or clone
 2. MAX485 or MAX3485 TTL to RS485 board*
 3. 0.96" I2C OLED Screen (optional)
+4. 2x 2 pin 5mm terminal blocks https://www.aliexpress.com/item/32993822517.html
+5. 3d printer (or a friend with one)
 
 *The MAX3485 is preferred as it is much more stable because it uses 3.3v logic, just like the ESP8266/ESP32. The MAX485 uses 5v logic but is somewhat tolerant of 3.3v and is generally cheaper and more widely available. I use a MAX485 but many people have reported problems with this and if you can find a MAX3485 then you should use that. MAX3485 boards do not have DR and RE flow control pins, so just skip the wire from pin D5 in the wiring diagram below.
 
