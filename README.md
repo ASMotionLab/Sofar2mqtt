@@ -6,7 +6,10 @@ Supported models:
 ME3000SP - Full support  
 HYD-xx00-ES - Full support
 
-![Sofar2MQTT](pics/Sofar2MQTT.jpg)
+![image](https://user-images.githubusercontent.com/43951291/174405916-3ef3bff7-4cb5-4531-b8f7-9626383aeffe.png)
+
+![image](https://user-images.githubusercontent.com/43951291/174405772-b194db91-e26b-4341-960b-4e7e2e368873.png)
+
 
 Sofar2mqtt is a remote control interface for Sofar solar and battery inverters.
 It allows remote control of the inverter and reports the invertor status, power usage, battery state etc for integration with smart home systems such as [Home Assistant](https://www.home-assistant.io/) and [Node-Red](https://nodered.org/).  
@@ -57,14 +60,11 @@ calcCRC by angelo.compagnucci@gmail.com and jpmzometa@gmail.com
 # How To Build
 
 Parts List:
-1. ESP8266 Microcontroller
+1. ESP32 D1 Mini or clone
 2. MAX485 or MAX3485 TTL to RS485 board*
-3. Wemos 64x48 OLED Screen (optional)
-4. A small project board
-5. A few wires and a little solder
+3. 0.96" I2C OLED Screen (optional)
 
 *The MAX3485 (which is red, not blue like the MAX485 shown here) is preferred as it is much more stable because it uses 3.3v logic, just like the ESP8366. The MAX485 uses 5v logic but is somewhat tolerant of 3.3v and is generally cheaper and more widely available. I use a MAX485 but many people have reported problems with this and if you can find a MAX3485 then you should use that. MAX3485 boards do not have DR and RE flow control pins, so just skip the wire from pin D5 in the wiring diagram below.
 
-
-
-
+The 3d printable DIN case can be found here:
+https://www.thingiverse.com/thing:5413436
