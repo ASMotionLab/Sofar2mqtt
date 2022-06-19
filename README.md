@@ -14,8 +14,7 @@ HYD-xx00-ES - Full support
 Sofar2mqtt is a remote control interface for Sofar solar and battery inverters.
 It allows remote control of the inverter and reports the invertor status, power usage, battery state etc for integration with smart home systems such as [Home Assistant](https://www.home-assistant.io/) and [Node-Red](https://nodered.org/).  
 For read only mode, it will send status messages without the inverter needing to be in passive mode.  
-It's designed to run on an ESP8266 microcontroller with a TTL to RS485 module such as MAX485 or MAX3485.  
-Designed to work with TTL modules with or without the DR and RE flow control pins. If your TTL module does not have these pins then just ignore the wire from D5. 
+It's designed to run on an ESP8266 microcontroller (adapted for ESP32 with this fork) with a TTL to RS485 module such as MAX485 or MAX3485 with automatic flow control - no DR or DE pins.
 
 Subscribe your MQTT client to:
 
