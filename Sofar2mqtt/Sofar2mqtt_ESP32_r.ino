@@ -1,17 +1,19 @@
 // Update these to match your inverter/network.
-//#define INVERTER_ME3000				// Uncomment for ME3000
-#define INVERTER_HYBRID			// Uncomment for Hybrid
+#define INVERTER_ME3000				// Uncomment for ME3000
+//#define INVERTER_HYBRID			// Uncomment for Hybrid
 
 // The device name is used as the MQTT base topic. If you need more than one Sofar2mqtt on your network, give them unique names.
 const char* deviceName = "Sofar2mqtt";
-const char* version = "v2.0b1";
+const char* version = "v2.1.1 loopyeng ESP32";
+
 
 #define WIFI_SSID	"xxxx"
 #define WIFI_PASSWORD	"xxxx"
-#define MQTT_SERVER	"xxxx"
+#define MQTT_SERVER	"xxx.xxx.x.xxx"
 #define MQTT_PORT	1883
-#define MQTT_USERNAME	"xxxx"			// Empty string for none.
-#define MQTT_PASSWORD	"xxxx"
+#define MQTT_USERNAME	"xxx"			// Empty string for none.
+#define MQTT_PASSWORD	"xxx"
+
 
 /*****
 Sofar2mqtt is a remote control interface for Sofar solar and battery inverters.
@@ -22,11 +24,11 @@ Designed to work with TTL modules with or without the DR and RE flow control pin
 
 
 ____________________________________________________________________
-This fork (ASMotionLab) is modified for an ESP32 D1 Mini or clone, and uses Hardware Serial 2,
+This fork (loopyengineeringco) is modified for an ESP32 D1 Mini or clone, and uses Hardware Serial 2,
 remapped to pins 16 and 17 for practical reasons. Feel free to use Serial1 if you like, and any pins that will be compatible.
 
 To remap your pins, or to make sure they are assigned correctly:
-"C:\Users\YOURUSERNAME\AppData\Local\Arduino15\packages\esp32\hardware\esp32\1.0.4\cores\esp32\HardwareSerial.cpp"
+"C:\Users\YOURUSERNAME\AppData\Local\Arduino15\packages\esp32\hardware\esp32\xxxxx\cores\esp32\HardwareSerial.h"
 
 #ifndef RX2
 #define RX2 16
@@ -37,8 +39,11 @@ To remap your pins, or to make sure they are assigned correctly:
 #endif
 
 Close Arduino IDE completely to force it to relink & recompile from fresh before trying to upload,
-otherwise cached files are used for compile and the modified HardwareSerial.cpp file is ignored.
+otherwise cached files are used for compile and the modified HardwareSerial.h file is ignored.
 __________________________________________________________________
+
+
+
 
 Subscribe your MQTT client to:
 
@@ -49,10 +54,11 @@ Which provides:
 running_state  
 grid_voltage  
 grid_current  
-grid_freq  
-battery_power  
+grid_freq
+systemIO_power (AC side of inverter) 
+battery_power  (DC side of inverter)
 battery_voltage  
-battery_current  
+battery_current
 batterySOC  
 battery_temp  
 battery_cycles  
@@ -65,7 +71,8 @@ today_purchase
 today_consumption  
 inverter_temp  
 inverterHS_temp  
-solarPVAmps  
+solarPVAmps
+  
 
 With the inverter in Passive Mode, send MQTT messages to:
 
@@ -116,11 +123,9 @@ calcCRC by angelo.compagnucci@gmail.com and jpmzometa@gmail.com
 #endif
 
 #define RS485_TRIES 8       // x 50mS to wait for RS485 input chars.
-// Wifi parameters. Fill in your wifi network name and password.
-
-//#include <ESP8266WiFi.h> // this is if you're using a ESP8266
+// Wifi parameters.
+//#include <ESP8266WiFi.h>
 #include <WiFi.h> // this is if you're using a ESP32
-
 const char* wifiName = WIFI_SSID;
 WiFiClient wifi;
 
@@ -131,15 +136,13 @@ PubSubClient mqtt(wifi);
 
 // SoftwareSerial is used to create a second serial port, which will be deidcated to RS485.
 // The built-in serial port remains available for flashing and debugging.
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 //#define SERIAL_COMMUNICATION_CONTROL_PIN D5 // Transmission set pin
 #define RS485_TX HIGH
 #define RS485_RX LOW
-
-
-//#define RXPin        18  // Serial Receive pin
-//#define TXPin        19  // Serial Transmit pin
-//SoftwareSerial RS485Serial(RXPin, TXPin);
+//#define RXPin        D6  // Serial Receive pin
+//#define TXPin        D7  // Serial Transmit pin
+//SoftwareSerial Serial2(RXPin, TXPin);
 
 // Sofar run states
 #define waiting 0
@@ -193,6 +196,7 @@ bool BATTERYSAVE = false;
 #define SOFAR_REG_BATTTEMP	0x0211
 #define SOFAR_REG_GRIDW		0x0212
 #define SOFAR_REG_LOADW		0x0213
+#define SOFAR_REG_SYSIOW	0x0214
 #define SOFAR_REG_PVW		0x0215
 #define SOFAR_REG_PVDAY		0x0218
 #define SOFAR_REG_EXPDAY	0x0219
@@ -226,6 +230,7 @@ static struct mqtt_status_register  mqtt_status_reads[] =
 	{ SOFAR_REG_BATTW, "battery_power" },
 	{ SOFAR_REG_BATTV, "battery_voltage" },
 	{ SOFAR_REG_BATTA, "battery_current" },
+	{ SOFAR_REG_SYSIOW, "systemIO_power" },
 	{ SOFAR_REG_BATTSOC, "batterySOC" },
 	{ SOFAR_REG_BATTTEMP, "battery_temp" },
 	{ SOFAR_REG_BATTCYC, "battery_cycles" },
@@ -266,8 +271,17 @@ struct modbusResponse
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#define OLED_RESET 0  // GPIO0
-Adafruit_SSD1306 display(OLED_RESET);
+
+
+//#define OLED_RESET 0  // GPIO0
+//Adafruit_SSD1306 display(OLED_RESET);
+
+#define OLED_RESET -1  // GPIO0
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+//Adafruit_SSD1306 display(OLED_RESET);
+
 
 /**
  * Check to see if the elapsed interval has passed since the passed in
@@ -432,7 +446,7 @@ void mqttCallback(String topic, byte *message, unsigned int length)
 
 	Serial.println();
 	int   messageValue = messageTemp.toInt();
-	bool  messageBool = (messageTemp != "false");
+	bool  messageBool = ((messageTemp != "false") && (messageTemp != "battery_save"));
 
 	if(cmd == "standby")
 	{
@@ -489,7 +503,7 @@ void batterySave()
 		// Switch to auto when any power flows to the grid.
 		// We leave a little wriggle room because once you start charging the battery,
 		// gridPower should be floating just above or below zero.
-		if(p < 65535/2 || p > 65525)
+		if((p < 65535/2 || p > 65525) && (INVERTER_RUNNINGSTATE != discharging))
 		{
 			//exporting to the grid
 			if(!sendPassiveCmd(SOFAR_SLAVE_ID, SOFAR_FN_AUTO, 0, "bsave_auto"))
@@ -559,7 +573,7 @@ void mqttReconnect()
 
 /**
  * Flush the RS485 buffers in both directions. The doc for Serial.flush() implies it only
- * flushes outbound characters now... I assume RS485Serial is the same.
+ * flushes outbound characters now... I assume Serial2 is the same.
  */
 void flushRS485()
 {
@@ -880,6 +894,10 @@ void setup()
 
 	//Turn on the OLED
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize OLED with the I2C addr 0x3C (for the 64x48)
+
+  display.ssd1306_command(SSD1306_SETCONTRAST);
+  display.ssd1306_command(1);
+
 	display.clearDisplay();
 	display.display();
 	updateOLED(deviceName, "connecting", "", version);
